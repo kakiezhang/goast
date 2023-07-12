@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"log"
 )
@@ -23,7 +25,7 @@ func buildAst() {
 		log.Fatal(err)
 	}
 
-	tokenRecvCheck(f, "mc", "Get")
+	tokenRecvCheck(f)
 
 	// // Step 2: Find the function with the specified name
 	// fd := findFunction(fname, f)
@@ -35,28 +37,27 @@ func buildAst() {
 
 	// stake(fd)
 
-	// // Step 4: Write the modified AST back to file
-	// var buf bytes.Buffer
-	// if err := printer.Fprint(&buf, fset, f); err != nil {
-	// 	log.Fatal(err)
-	// }
+	// Step 4: Write the modified AST back to file
+	var buf bytes.Buffer
+	if err := printer.Fprint(&buf, fset, f); err != nil {
+		log.Fatal(err)
+	}
 
 	// if err := ioutil.WriteFile(fpath, buf.Bytes(), 0644); err != nil {
 	// 	log.Fatal(err)
 	// }
 }
 
-func tokenRecvCheck(f *ast.File, r, m string) {
+func tokenRecvCheck(f *ast.File) {
+	r := "mc"
+	m := "Get"
+
+	ok := true
 	ast.Inspect(f, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.AssignStmt:
 			if x.Tok == token.DEFINE || x.Tok == token.ASSIGN {
 				i := 0
-
-				// callExpr := x.Rhs[i].(*ast.CallExpr)
-				// fnName := callExpr.Fun.(*ast.SelectorExpr).Sel.Name
-
-				// fmt.Printf("x.Rhs: %+v\n", x.Rhs)
 
 				if callExpr, ok := x.Rhs[i].(*ast.CallExpr); ok {
 					// fmt.Printf("callExpr: %+v\n", callExpr.Fun)
@@ -67,21 +68,17 @@ func tokenRecvCheck(f *ast.File, r, m string) {
 						if ident.Sel.Name == m {
 							if fmt.Sprint(ident.X) == r {
 								fmt.Printf("dsn sep called: %s.%s()\n", r, m)
-								// fmt.Printf("aaa x.Lhs: %+v\n", x.Lhs)
-							} else {
-								isSrcDotGet(ident.X, r, m)
+								ok = false
+								// return false
 							}
 						}
 					}
 				}
-
-				if len(x.Lhs) == 1 {
-					r = x.Lhs[0].(*ast.Ident).Name
-					// m = "Get"
-				}
 			}
 		}
-		return true
+
+		fmt.Println("hhhhhh")
+		return ok
 	})
 }
 
